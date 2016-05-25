@@ -11,6 +11,8 @@
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @protocol ODRefreshControlContentView <NSObject>
 
 @property (nonatomic,getter=isEnabled) BOOL enabled;
@@ -29,21 +31,14 @@
 @interface ODRefreshControl : UIControl
 
 @property (nonatomic, readonly, getter=isRefreshing) BOOL refreshing;
-
-#ifdef __IPHONE_5_0
 @property (nonatomic, strong) UIColor *tintColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, assign) UIActivityIndicatorViewStyle activityIndicatorViewStyle UI_APPEARANCE_SELECTOR;
-@property (nonatomic, strong) UIColor *activityIndicatorViewColor UI_APPEARANCE_SELECTOR; // iOS5 or more
-#else
-@property (nonatomic, strong) UIColor *tintColor;
-@property (nonatomic, assign) UIActivityIndicatorViewStyle activityIndicatorViewStyle;
-@property (nonatomic, strong) UIColor *activityIndicatorViewColor; // iOS5 or more
-#endif
+@property (nonatomic, strong) UIColor *activityIndicatorViewColor UI_APPEARANCE_SELECTOR;
 
-- (id)initInScrollView:(UIScrollView *)scrollView;
+- (instancetype)initInScrollView:(UIScrollView *)scrollView;
 
 // use custom activity indicator
-- (id)initInScrollView:(UIScrollView *)scrollView activityIndicatorView:(UIView *)activity;
+- (instancetype)initInScrollView:(UIScrollView *)scrollView activityIndicatorView:(nullable UIView *)activity;
 
 // Tells the control that a refresh operation was started programmatically
 - (void)beginRefreshing;
@@ -52,3 +47,5 @@
 - (void)endRefreshing;
 
 @end
+
+NS_ASSUME_NONNULL_END
