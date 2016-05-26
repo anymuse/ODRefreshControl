@@ -50,17 +50,15 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
 }
 
 - (instancetype)initWithFrame:(CGRect)frame activityIndicatorView:(UIView *)activity {
-    self = [super initWithFrame:frame];
-    
-    if (self) {
+    if (self = [super initWithFrame:frame]) {
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         
         id activity = nil;
-        _activity = activity ? activity : [[UIActivityIndicatorView alloc]
-                                           initWithActivityIndicatorStyle:
-                                           UIActivityIndicatorViewStyleGray];
-        _activity.center = CGPointMake(floor(self.frame.size.width / 2),
-                                       floor(self.frame.size.height / 2));
+        _activity = activity ?: [[UIActivityIndicatorView alloc]
+                                 initWithActivityIndicatorStyle:
+                                 UIActivityIndicatorViewStyleGray];
+        _activity.center = CGPointMake(floor(CGRectGetWidth(frame) / 2),
+                                       floor(CGRectGetHeight(frame) / 2));
         _activity.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin |
         UIViewAutoresizingFlexibleRightMargin;
         _activity.alpha = 0;
@@ -148,11 +146,11 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
     if (_refreshing) {
         // Keep thing pinned at the top
         _activity.center =
-        CGPointMake(floor(self.frame.size.width / 2),
-                    MIN(floor([self openHeight] / 2),
-                        self.frame.size.height - [self openHeight] / 2));
+        CGPointMake(floor(CGRectGetWidth(self.frame) / 2),
+                    MIN(floor(self.openHeight / 2),
+                        CGRectGetHeight(self.frame) - self.openHeight / 2));
     } else {
-        if (self.frame.size.height == 0) {
+        if (CGRectGetHeight(self.frame) == 0) {
             _shapeLayer.path = nil;
             _shapeLayer.shadowPath = nil;
             _arrowLayer.path = nil;
@@ -164,7 +162,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
         // Calculate some useful points and values
         CGFloat verticalShift = MAX(0, -((kMaxTopRadius + kMaxBottomRadius +
                                           kMaxTopPadding + kMaxBottomPadding) -
-                                         self.frame.size.height));
+                                         CGRectGetHeight(self.frame)));
         CGFloat distance = MIN(kMaxDistance, fabs(verticalShift));
         CGFloat percentage = 1 - (distance / kMaxDistance);
         
