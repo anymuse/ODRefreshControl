@@ -30,6 +30,7 @@ const CGFloat kMaxDistance = 53.0f;
 
 @property(assign, nonatomic, getter=isEnabled) BOOL enabled;
 @property (strong, nonatomic) UIColor *tintColor;
+@property (strong, nonatomic) UILabel *statusLabel;
 
 @end
 
@@ -50,17 +51,15 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
 }
 
 - (instancetype)initWithFrame:(CGRect)frame activityIndicatorView:(UIView *)activity {
-    self = [super initWithFrame:frame];
-    
-    if (self) {
+    if (self = [super initWithFrame:frame]) {
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         
         id activity = nil;
-        _activity = activity ? activity : [[UIActivityIndicatorView alloc]
-                                           initWithActivityIndicatorStyle:
-                                           UIActivityIndicatorViewStyleGray];
-        _activity.center = CGPointMake(floor(self.frame.size.width / 2),
-                                       floor(self.frame.size.height / 2));
+        _activity = activity ?: [[UIActivityIndicatorView alloc]
+                                 initWithActivityIndicatorStyle:
+                                 UIActivityIndicatorViewStyleGray];
+        _activity.center = CGPointMake(floor(CGRectGetWidth(frame) / 2),
+                                       floor(CGRectGetHeight(frame) / 2));
         _activity.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin |
         UIViewAutoresizingFlexibleRightMargin;
         _activity.alpha = 0;
@@ -68,6 +67,13 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
             [(UIActivityIndicatorView *)_activity startAnimating];
         }
         [self addSubview:_activity];
+        
+        _statusLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100, 30)];
+        _statusLabel.textColor = [UIColor lightGrayColor];
+        _statusLabel.font = [UIFont systemFontOfSize:13];
+        _statusLabel.textAlignment = NSTextAlignmentCenter;
+        _statusLabel.hidden = YES;
+        [self addSubview:_statusLabel];
         
         _tintColor = [UIColor colorWithRed:155.0 / 255.0
                                      green:162.0 / 255.0
@@ -144,15 +150,23 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
 
 #pragma mark - Layout
 
+- (void)showLayers:(BOOL)show {
+    //    float opacity = show ? 1 : 0;
+    //    _shapeLayer.opacity = opacity;
+    //    _arrowLayer.opacity = opacity;
+    //    _highlightLayer.opacity = opacity;
+}
+
 - (void)layoutSubviews {
     if (_refreshing) {
         // Keep thing pinned at the top
         _activity.center =
-        CGPointMake(floor(self.frame.size.width / 2),
-                    MIN(floor([self openHeight] / 2),
-                        self.frame.size.height - [self openHeight] / 2));
+        CGPointMake(floor(CGRectGetWidth(self.frame) / 2),
+                    MIN(floor(self.openHeight / 2),
+                        CGRectGetHeight(self.frame) - self.openHeight / 2));
+        _statusLabel.center = _activity.center;
     } else {
-        if (self.frame.size.height == 0) {
+        if (CGRectGetHeight(self.frame) == 0) {
             _shapeLayer.path = nil;
             _shapeLayer.shadowPath = nil;
             _arrowLayer.path = nil;
@@ -164,7 +178,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
         // Calculate some useful points and values
         CGFloat verticalShift = MAX(0, -((kMaxTopRadius + kMaxBottomRadius +
                                           kMaxTopPadding + kMaxBottomPadding) -
-                                         self.frame.size.height));
+                                         CGRectGetHeight(self.frame)));
         CGFloat distance = MIN(kMaxDistance, fabs(verticalShift));
         CGFloat percentage = 1 - (distance / kMaxDistance);
         
@@ -352,29 +366,36 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
             _activity.alpha = 1;
             _activity.layer.transform = CATransform3DMakeScale(1, 1, 1);
         }
-        
         _refreshing = YES;
     }
 }
 
-- (void)endRefreshing {
+- (void)endRefreshingWithSuccess:(BOOL)success completion:(void (^)())completion {
     if (_refreshing) {
-        [UIView animateWithDuration:0.4
-                         animations:^{
-                             _activity.alpha = 0;
-                             _activity.layer.transform = CATransform3DMakeScale(0.1, 0.1, 1);
-                         }
-                         completion:^(BOOL finished) {
-                             [_shapeLayer removeAllAnimations];
-                             _shapeLayer.path = nil;
-                             _shapeLayer.shadowPath = nil;
-                             _shapeLayer.position = CGPointZero;
-                             [_arrowLayer removeAllAnimations];
-                             _arrowLayer.path = nil;
-                             [_highlightLayer removeAllAnimations];
-                             _highlightLayer.path = nil;
-                             _refreshing = NO;
-                         }];
+        [UIView animateWithDuration:0.2 delay:0.5 options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationTransitionNone animations:^{
+            _activity.alpha = 0;
+        } completion:^(BOOL finished) {
+            [_shapeLayer removeAllAnimations];
+            _shapeLayer.path = nil;
+            _shapeLayer.shadowPath = nil;
+            _shapeLayer.position = CGPointZero;
+            [_arrowLayer removeAllAnimations];
+            _arrowLayer.path = nil;
+            [_highlightLayer removeAllAnimations];
+            _highlightLayer.path = nil;
+            
+            [self showLayers:NO];
+            _refreshing = NO;
+            _statusLabel.hidden = NO;
+            if (success) {
+                _statusLabel.text = @"刷新成功";
+            } else {
+                _statusLabel.text = @"刷新失败";
+            }
+            if (completion) {
+                completion();
+            }
+        }];
     }
 }
 
@@ -414,7 +435,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
 
 - (instancetype)initInScrollView:(UIScrollView *)scrollView
            activityIndicatorView:(UIView *)activity {
-    if (self = [super initWithFrame:CGRectMake(0, 0, scrollView.frame.size.width, 0)]) {
+    if (self = [super initWithFrame:CGRectMake(0, 0, CGRectGetWidth(scrollView.frame), 0)]) {
         self.scrollView = scrollView;
         self.originalContentInset = scrollView.contentInset;
         
@@ -527,7 +548,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
             [[change objectForKey:@"new"] UIEdgeInsetsValue];
             originalContentInset.top -= _currentTopInset;
             self.originalContentInset = originalContentInset;
-            self.frame = CGRectMake(0, 0, self.scrollView.frame.size.width, 0);
+            self.frame = CGRectMake(0, 0, CGRectGetWidth(self.scrollView.frame), 0);
             _lastOffset =
             self.scrollView.contentOffset.y + self.originalContentInset.top;
         }
@@ -543,7 +564,7 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
     CGFloat height = -MIN(0.0f, offset);
     self.frame = CGRectMake(
                             0, -height - self.originalContentInset.top + [self navigationBarInset],
-                            self.scrollView.frame.size.width, height);
+                            CGRectGetWidth(self.scrollView.frame), height);
     
     if (_refreshing) {
         _lastOffset = offset;
@@ -667,33 +688,32 @@ static inline CGFloat lerp(CGFloat a, CGFloat b, CGFloat p) {
     _canRefresh = NO;
 }
 
-- (void)endRefreshing {
+- (void)endRefreshingWithSuccess:(BOOL)success {
     if (_refreshing) {
         // Create a temporary retain-cycle, so the scrollView won't be released
         // halfway through the end animation.
         // This allows for the refresh control to clean up the observer,
         // in the case the scrollView is released while the animation is running
         __block UIScrollView *blockScrollView = self.scrollView;
-        [UIView animateWithDuration:0.4
-                         animations:^{
-                             _ignoreInset = YES;
-                             _currentTopInset = 0.0f;
-                             [blockScrollView setContentInset:self.originalContentInset];
-                             _ignoreInset = NO;
-                         }
-                         completion:^(BOOL finished) {
-                             // We need to use the scrollView somehow in the end block,
-                             // or it'll get released in the animation block.
-                             _ignoreInset = YES;
-                             [blockScrollView setContentInset:self.originalContentInset];
-                             _ignoreInset = NO;
-                         }];
-        [_contentView endRefreshing];
-        dispatch_after(
-                       dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(), ^{
-                           self.refreshing = NO;
-                       });
+        blockScrollView.userInteractionEnabled = NO;
+        [_contentView endRefreshingWithSuccess:success completion:^{
+            [UIView animateWithDuration:0.4 delay:0.75 options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionTransitionNone animations:^{
+                _ignoreInset = YES;
+                _currentTopInset = 0.0f;
+                [blockScrollView setContentInset:self.originalContentInset];
+                _ignoreInset = NO;
+            } completion:^(BOOL finished) {
+                // We need to use the scrollView somehow in the end block,
+                // or it'll get released in the animation block.
+                _ignoreInset = YES;
+                [blockScrollView setContentInset:self.originalContentInset];
+                _ignoreInset = NO;
+                [_contentView showLayers:YES];
+                _contentView.statusLabel.hidden = YES;
+                blockScrollView.userInteractionEnabled = YES;
+                self.refreshing = NO;
+            }];
+        }];
     }
 }
 

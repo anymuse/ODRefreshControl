@@ -19,12 +19,15 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) UIColor *tintColor;
 @property (nonatomic, assign) UIActivityIndicatorViewStyle activityIndicatorViewStyle;
 @property (nonatomic, strong) UIColor *activityIndicatorViewColor;
+@property (strong, nonatomic) UILabel *statusLabel;
 
 - (CGFloat)triggerHeight;
 - (CGFloat)openHeight;
 
+- (void)showLayers:(BOOL)show;
+
 - (void)beginRefreshing:(BOOL)animated;
-- (void)endRefreshing;
+- (void)endRefreshingWithSuccess:(BOOL)success completion:(void (^)())completion;
 
 @end
 
@@ -44,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)beginRefreshing;
 
 // Tells the control the refresh operation has ended
-- (void)endRefreshing;
+- (void)endRefreshingWithSuccess:(BOOL)success;
 
 @end
 
